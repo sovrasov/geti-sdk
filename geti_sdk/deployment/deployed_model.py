@@ -580,6 +580,38 @@ class DeployedModel(OptimizedModel):
             inference_results=inference_results, metadata=metadata, explain=explain
         )
 
+    def infer_batch(self, images: List[np.ndarray], explain: bool = False) -> List[Prediction]:
+        """
+        Run inference on an already preprocessed list of images.
+
+        :param images: list of numpy arrays representing images
+        :param explain: True to include saliency maps and feature maps in the returned
+            Prediction. Note that these are only available if supported by the model.
+        :return: Dictionary containing the model outputs
+        """
+        postprocessed_results = []
+        if not self._tiling_enabled:
+            inference_results = self._inference_model.infer_batch(images)
+
+            for i, inf_res in enumerate(inference_results):
+                metadata = {
+                    "original_shape": images[i].shape
+                }
+                postprocessed_results.append(self._apply_postprocessing_steps(
+                    inference_results=inf_res, metadata=metadata, explain=explain,
+                    skip_postprocessing=True,
+                ))
+
+        else:
+            for image in images:
+                inference_results = self._tiler(image)
+                metadata = {"original_shape": image.shape}
+                postprocessed_results.append(self._apply_postprocessing_steps(
+                    inference_results=inference_results, metadata=metadata, explain=explain
+                ))
+
+        return postprocessed_results
+
     def infer_async(
         self,
         image: np.ndarray,
@@ -674,7 +706,8 @@ class DeployedModel(OptimizedModel):
         return self._labels
 
     def _apply_postprocessing_steps(
-        self, inference_results: Any, metadata: Dict[str, Any], explain: bool
+        self, inference_results: Any, metadata: Dict[str, Any], explain: bool,
+        skip_postprocessing: bool = False
     ) -> Prediction:
         """
         Apply the required postprocessing steps to convert the model output to a
@@ -683,9 +716,10 @@ class DeployedModel(OptimizedModel):
         :param inference_results: The results of the model
         :param metadata: Dictionary containing metadata about the original image
         :param explain: True to enable XAI outputs (saliency map and feature vector)
+        :param skip_postprocessing: If True, skip the postprocessing step
         :return: Prediction object containing the model predictions
         """
-        if not self._tiling_enabled:
+        if not self._tiling_enabled or skip_postprocessing:
             postprocessing_results = self._postprocess(
                 inference_results, metadata=metadata
             )

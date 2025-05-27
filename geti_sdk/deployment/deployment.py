@@ -457,6 +457,22 @@ class Deployment:
         model = self._get_model_for_task(task)
         return model.infer(image, explain)
 
+    def _infer_task_batch(
+        self, images: List[np.ndarray], task: Task, explain: bool = False
+    ) -> List[Prediction]:
+        """
+        Run pre-processing, inference, and post-processing on the input `images`, for
+        the model associated with the `task`.
+
+        :param images: Images to run inference on
+        :param task: Task to run inference for
+        :param explain: True to get additional outputs for model explainability,
+            including saliency maps and the feature vector for the image
+        :return: Inference results
+        """
+        model = self._get_model_for_task(task)
+        return model.infer_batch(images, explain)
+
     def _infer_task_async(
         self,
         image: np.ndarray,
