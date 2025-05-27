@@ -719,7 +719,7 @@ class DeployedModel(OptimizedModel):
         :param skip_postprocessing: If True, skip the postprocessing step
         :return: Prediction object containing the model predictions
         """
-        if not self._tiling_enabled or skip_postprocessing:
+        if not self._tiling_enabled and not skip_postprocessing:
             postprocessing_results = self._postprocess(
                 inference_results, metadata=metadata
             )

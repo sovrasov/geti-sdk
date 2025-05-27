@@ -542,8 +542,10 @@ class Deployment:
                         "trainable task in the pipeline."
                     )
                 new_rois: List[ROI] = []
-                for roi, view in zip(rois, image_views):
-                    view_prediction = self._infer_task(view, task)
+
+                view_predictions = self._infer_task_batch(image_views, task)
+
+                for roi, view_prediction in zip(rois, view_predictions):
                     if task.is_global:
                         # Global tasks add their labels to the existing shape in the ROI
                         intermediate_result.extend_annotations(
